@@ -3,10 +3,8 @@ using System.Threading;
 
 namespace Locus.Threading
 {
-    public class MessageFiber<T>
+    public abstract class MessageFiber<T>
     {
-        Action<T> _onProcessMessage;
-
         class MessageNode
         {
             public MessageNode Next;
@@ -20,12 +18,14 @@ namespace Locus.Threading
 
         static readonly MessageNode Blocked = new MessageNode() { canRecycle = false };
 
-        public MessageFiber(Action<T> onProcessMessage)
+        public MessageFiber()
         {
-            _onProcessMessage = onProcessMessage;
             RunInternalWaitCallback = RunInternal;
             head = tail = lastTale = new MessageNode() { canRecycle = false, Next = Blocked };
         }
+
+        protected abstract void OnMessage(T message);
+        protected abstract void OnException(Exception exception);
 
         WaitCallback RunInternalWaitCallback;
         void RunInternal(object obj)
@@ -41,7 +41,14 @@ namespace Locus.Threading
 
                 //remember last tale to be continued
                 lastTale = messageNode;
-                _onProcessMessage(messageNode.Item);
+                try
+                {
+                    OnMessage(messageNode.Item);
+                }
+                catch (Exception e)
+                {
+                    OnException(e);
+                }
                 messageNode = GetNext(messageNode);
             }
             while (messageNode != null);
@@ -82,7 +89,6 @@ namespace Locus.Threading
             return result;
         }
 
-
         
         public void Enqueue(T parameter)
         {
@@ -93,7 +99,7 @@ namespace Locus.Threading
 
             //if oldtail is null or tailing is failed
             if (!TryTail(oldTail, newTail))
-                ThreadPool.UnsafeQueueUserWorkItem(RunInternalWaitCallback, newTail);
+                ThreadPool.QueueUserWorkItem(RunInternalWaitCallback, newTail);
         }
 
         
