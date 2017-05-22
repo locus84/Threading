@@ -89,7 +89,12 @@ namespace Locus.Threading
             return result;
         }
 
-        
+        /// <summary>
+        /// Enqueue a message to this fiber.
+        /// The message will be executed on a threadpool thread with OnMessage implementation
+        /// Each call is thread safe
+        /// </summary>
+        /// <param name="message">Message to enqueue</param>
         public void Enqueue(T message)
         {
             var newTail = GetAvailableNode();
@@ -102,14 +107,14 @@ namespace Locus.Threading
                 ThreadPool.QueueUserWorkItem(RunInternalWaitCallback, newTail);
         }
 
-        
+
+        //if next is already blocked, then previous actions are already executed.
         static bool TryTail(MessageNode prev, MessageNode next)
         {
             return Interlocked.CompareExchange(ref prev.Next, next, null) == null;
         }
 
-        //if next is already blocked, then previous actions are already executed.
-        //we're free to start new thread to execute next one
+        //get next node and mark it as blocked
         static MessageNode GetNext(MessageNode prev)
         {
             return Interlocked.Exchange(ref prev.Next, Blocked);
