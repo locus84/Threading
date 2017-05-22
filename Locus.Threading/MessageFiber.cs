@@ -90,10 +90,10 @@ namespace Locus.Threading
         }
 
         
-        public void Enqueue(T parameter)
+        public void Enqueue(T message)
         {
             var newTail = GetAvailableNode();
-            newTail.Item = parameter;
+            newTail.Item = message;
 
             var oldTail = Interlocked.Exchange(ref tail, newTail);
 
