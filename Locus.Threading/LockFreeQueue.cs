@@ -168,4 +168,26 @@ namespace Locus.Threading
 }
 
 
+//can recycle 형태 안되는 경우
+//A가 Enqueue됨
+//   rh,h -----t
+// s0(0) - s1(A)  이후 s0은 recycle = true되고,
+//디큐하면
+//   rh -----h,t
+// s0(0) -s1(0)
+//1번쓰레드가 접근해서 X를 인큐하려고 GetAvailableNode도중 canrecycle == true체크까지 완료함
+//그 와중에 2번쓰레드가 접근해서 B를 인큐
+//   rh,h------t
+//s1(0) - s0(B)
+//다음 2번쓰레드가 아이가 B를 디큐
+//   rh------h,t
+//s1(0) - s0(0)
+//다시 C를 인큐
+//  rh, h -----t
+// s0(0)-s1(C)
+//그담에 지속해서 실행되면, h는 맞고 canrecycle까지 체크가 되어있으니 s0을 가져다 쓴다.
+//  rh -------t, h
+//s1(C) - s0(X)
+//마치 디큐되어있는 형태가 된다.
+
 
