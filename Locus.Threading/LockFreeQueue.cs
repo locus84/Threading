@@ -1,67 +1,27 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Collections.Generic;
 
 namespace Locus.Threading
 {
     public class LockFreeQueue<T> {
 
-        class SingleLinkNode {
-            public SingleLinkNode Next;
-            public bool canRecycle;
-            public T Item;
-        }
+        static NodePool<T> _NodePool = new NodePool<T>();
 
-        SingleLinkNode recycleHead;
-        SingleLinkNode head;
-        SingleLinkNode tail;
+        SingleLinkNode<T> head;
+        SingleLinkNode<T> tail;
         int m_Count = 0;
 
         public int Count { get { return m_Count; } }
 
         public LockFreeQueue() {
-            head = tail = recycleHead = new SingleLinkNode {canRecycle = true};
+            head = tail = new SingleLinkNode<T>();
         }
-
-        private SingleLinkNode GetAvailableNode()
-        {
-            SingleLinkNode oldTail, oldNext, oldHead, result;
-
-            while (true) {
-
-                oldHead = recycleHead;
-                //hazard
-                if (oldHead != recycleHead)
-                    continue;
-                oldTail = head;
-                oldNext = oldHead.Next;
-                //hazard
-                if (oldHead != recycleHead) 
-                    continue;
-
-                if (oldHead == oldTail) 
-                    return new SingleLinkNode();
-
-                //not ready
-                if (!oldHead.canRecycle)
-                    return new SingleLinkNode();
-
-                result = oldHead;
-                if(Interlocked.CompareExchange(ref recycleHead, oldNext, oldHead) == oldHead)
-                    break;
-
-            }
-
-            result.Next = null;
-            result.canRecycle = false;
-            return result;
-        }
-
+        
         public void Enqueue(T item) {
 
             Interlocked.Increment(ref m_Count);
-            SingleLinkNode node, oldTail, oldNext;
-            node = GetAvailableNode();
+            SingleLinkNode<T> node, oldTail, oldNext;
+            node = _NodePool.Pop();
             node.Item = item;
 
             while (true) {
@@ -124,7 +84,7 @@ namespace Locus.Threading
 
         public bool TryDequeue(out T item)
         {
-            SingleLinkNode oldTail, oldNext, oldHead;
+            SingleLinkNode<T> oldTail, oldNext, oldHead;
 
             while (true) {
 
@@ -154,7 +114,7 @@ namespace Locus.Threading
             }
 
             oldNext.Item = default(T);
-            oldNext.canRecycle = true;
+            _NodePool.Push(oldNext);
             Interlocked.Decrement(ref m_Count);
             return true;
         }

@@ -5,23 +5,18 @@ namespace Locus.Threading
 {
     public abstract class MessageFiber<T>
     {
-        class MessageNode
-        {
-            public MessageNode Next;
-            public bool canRecycle;
-            public T Item;
-        }
+        static NodePool<T> _NodePool = new NodePool<T>();
 
-        MessageNode head;
-        MessageNode tail;
-        MessageNode lastTale;
+        SingleLinkNode<T> head;
+        SingleLinkNode<T> tail;
+        SingleLinkNode<T> lastTale;
 
-        static readonly MessageNode Blocked = new MessageNode() { canRecycle = false };
+        static readonly SingleLinkNode<T> Blocked = new SingleLinkNode<T>();
 
         public MessageFiber()
         {
             RunInternalWaitCallback = RunInternal;
-            head = tail = lastTale = new MessageNode() { canRecycle = false, Next = Blocked };
+            head = tail = lastTale = new SingleLinkNode<T>() { Next = Blocked };
         }
 
         protected abstract void OnMessage(T message);
@@ -30,14 +25,14 @@ namespace Locus.Threading
         WaitCallback RunInternalWaitCallback;
         void RunInternal(object obj)
         {
-            var messageNode = (MessageNode)obj;
+            var messageNode = (SingleLinkNode<T>)obj;
             
             do
             {
                 //restore blocked, let it can be recycle
-                lastTale.Next = messageNode;
                 lastTale.Item = default(T);
-                lastTale.canRecycle = true;
+                lastTale.Next = null;
+                _NodePool.Push(lastTale);
 
                 //remember last tale to be continued
                 lastTale = messageNode;
@@ -53,41 +48,6 @@ namespace Locus.Threading
             }
             while (messageNode != null);
         }
-        
-        private MessageNode GetAvailableNode()
-        {
-            MessageNode oldHead, oldNext, result;
-
-            while (true)
-            {
-                oldHead = head;
-                //hazard
-                if (oldHead != head)
-                    continue;
-                oldNext = oldHead.Next;
-
-                if (oldHead != head)
-                    continue;
-                
-                if (!oldHead.canRecycle)
-                {
-                    //it's head then it's still executing..
-                    if (oldHead == head)
-                        return new MessageNode();
-                    //if it's not head it's already recycled by other thread
-                    else
-                        continue;
-                }
-
-                result = oldHead;
-                if (Interlocked.CompareExchange(ref head, oldNext, oldHead) == oldHead)
-                    break;
-            }
-
-            result.Next = null;
-            result.canRecycle = false;
-            return result;
-        }
 
         /// <summary>
         /// Enqueue a message to this fiber.
@@ -97,7 +57,7 @@ namespace Locus.Threading
         /// <param name="message">Message to enqueue</param>
         public void Enqueue(T message)
         {
-            var newTail = GetAvailableNode();
+            var newTail = _NodePool.Pop();
             newTail.Item = message;
 
             var oldTail = Interlocked.Exchange(ref tail, newTail);
@@ -109,13 +69,13 @@ namespace Locus.Threading
 
 
         //if next is already blocked, then previous actions are already executed.
-        static bool TryTail(MessageNode prev, MessageNode next)
+        static bool TryTail(SingleLinkNode<T> prev, SingleLinkNode<T> next)
         {
             return Interlocked.CompareExchange(ref prev.Next, next, null) == null;
         }
 
         //get next node and mark it as blocked
-        static MessageNode GetNext(MessageNode prev)
+        static SingleLinkNode<T> GetNext(SingleLinkNode<T> prev)
         {
             return Interlocked.Exchange(ref prev.Next, Blocked);
         }
