@@ -1,51 +1,50 @@
-﻿using System.Threading;
+﻿//http://wiki.unity3d.com/index.php/Lock_Free_Queue
+//take a look for it
+//http://www.boyet.com/articles/lockfreequeue.html
+//idea came from here
+
+using System.Threading;
 using System.Collections.Generic;
 
 namespace Locus.Threading
 {
     public class LockFreeQueue<T> {
-
-        static NodePool<T> _NodePool = new NodePool<T>();
-
-        SingleLinkNode<T> head;
-        SingleLinkNode<T> tail;
+        
+        SingleNode<T> head;
+        SingleNode<T> tail;
         int m_Count = 0;
 
         public int Count { get { return m_Count; } }
 
         public LockFreeQueue() {
-            head = tail = new SingleLinkNode<T>();
+            head = tail = new SingleNode<T>();
         }
         
         public void Enqueue(T item) {
 
             Interlocked.Increment(ref m_Count);
-            SingleLinkNode<T> node, oldTail, oldNext;
-            node = _NodePool.Pop();
+            SingleNode<T> node, oldTail, oldNext;
+            node = NodePool<T>.Pop();
             node.Item = item;
 
             while (true) {
 
                 oldTail = tail;
-
-                //hazard
-                if (oldTail != tail)
-                    continue;
-
                 oldNext = oldTail.Next;
+
                 if (oldTail != tail)
                     continue;
 
                 if (oldNext != null) {
-                    Interlocked.CompareExchange(ref tail, oldNext, oldTail);
+                    SingleNode<T>.CAS(ref tail, oldNext, oldTail);
                     continue;
                 }
 
-                if (Interlocked.CompareExchange(ref oldTail.Next, node, null) == null)
+                if (SingleNode<T>.CAS(ref oldTail, node, null))
                     break;
             }
 
-            Interlocked.CompareExchange(ref tail, node, oldTail);
+            SingleNode<T>.CAS(ref tail, node, oldTail);
         }
 
         public void Enqueue(IEnumerable<T> items)
@@ -84,16 +83,14 @@ namespace Locus.Threading
 
         public bool TryDequeue(out T item)
         {
-            SingleLinkNode<T> oldTail, oldNext, oldHead;
+            SingleNode<T> oldTail, oldNext, oldHead;
 
             while (true) {
 
                 oldHead = head;
-                //hazard
-                if (oldHead != head)       // Check head hasn't changed
-                    continue;
                 oldTail = tail;
                 oldNext = oldHead.Next;
+
                 //hazard
                 if (oldHead != head) 
                     continue;
@@ -113,8 +110,7 @@ namespace Locus.Threading
                     break;
             }
 
-            oldNext.Item = default(T);
-            _NodePool.Push(oldNext);
+            NodePool<T>.Push(oldNext);
             Interlocked.Decrement(ref m_Count);
             return true;
         }

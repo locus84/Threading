@@ -5,37 +5,40 @@ namespace Locus.Threading
 {
     public abstract class MessageFiber<T>
     {
-        static NodePool<T> _NodePool = new NodePool<T>();
+        SingleNode<T> head;
+        SingleNode<T> tail;
+        SingleNode<T> lastTale;
+        Thread m_CurrentThread;
+        public bool IsCurrentThread { get { return m_CurrentThread == Thread.CurrentThread; } }
 
-        SingleLinkNode<T> head;
-        SingleLinkNode<T> tail;
-        SingleLinkNode<T> lastTale;
 
-        static readonly SingleLinkNode<T> Blocked = new SingleLinkNode<T>();
+        static readonly SingleNode<T> Blocked = new SingleNode<T>();
 
         public MessageFiber()
         {
             RunInternalWaitCallback = RunInternal;
-            head = tail = lastTale = new SingleLinkNode<T>() { Next = Blocked };
+            head = tail = lastTale = new SingleNode<T>() { Next = Blocked };
         }
 
         protected abstract void OnMessage(T message);
         protected abstract void OnException(Exception exception);
 
         WaitCallback RunInternalWaitCallback;
+
+        //TODO: make this to run bunch of them
         void RunInternal(object obj)
         {
-            var messageNode = (SingleLinkNode<T>)obj;
+            var messageNode = (SingleNode<T>)obj;
             
             do
             {
                 //restore blocked, let it can be recycle
-                lastTale.Item = default(T);
-                lastTale.Next = null;
-                _NodePool.Push(lastTale);
-
+                NodePool<T>.Push(lastTale);
                 //remember last tale to be continued
                 lastTale = messageNode;
+
+                //set current Thread
+                m_CurrentThread = Thread.CurrentThread;
                 try
                 {
                     OnMessage(messageNode.Item);
@@ -44,6 +47,12 @@ namespace Locus.Threading
                 {
                     OnException(e);
                 }
+
+                //release current Thread
+                m_CurrentThread = null;
+
+                //if next is null, then it successfully replace it's Next to Blocked
+                //otherwise messagenode is what recently trytail'ed
                 messageNode = GetNext(messageNode);
             }
             while (messageNode != null);
@@ -57,7 +66,7 @@ namespace Locus.Threading
         /// <param name="message">Message to enqueue</param>
         public void Enqueue(T message)
         {
-            var newTail = _NodePool.Pop();
+            var newTail = NodePool<T>.Pop();
             newTail.Item = message;
 
             var oldTail = Interlocked.Exchange(ref tail, newTail);
@@ -69,13 +78,13 @@ namespace Locus.Threading
 
 
         //if next is already blocked, then previous actions are already executed.
-        static bool TryTail(SingleLinkNode<T> prev, SingleLinkNode<T> next)
+        static bool TryTail(SingleNode<T> prev, SingleNode<T> next)
         {
-            return Interlocked.CompareExchange(ref prev.Next, next, null) == null;
+            return SingleNode<T>.CAS(ref prev.Next, next, null);
         }
 
         //get next node and mark it as blocked
-        static SingleLinkNode<T> GetNext(SingleLinkNode<T> prev)
+        static SingleNode<T> GetNext(SingleNode<T> prev)
         {
             return Interlocked.Exchange(ref prev.Next, Blocked);
         }
