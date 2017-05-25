@@ -11,7 +11,6 @@ namespace Locus.Threading
         Thread m_CurrentThread;
         public bool IsCurrentThread { get { return m_CurrentThread == Thread.CurrentThread; } }
 
-
         static readonly SingleNode<T> Blocked = new SingleNode<T>();
 
         public MessageFiber()
@@ -29,7 +28,9 @@ namespace Locus.Threading
         void RunInternal(object obj)
         {
             var messageNode = (SingleNode<T>)obj;
-            
+            //store current Thread to reduce property call
+            var currentThread = Thread.CurrentThread;
+
             do
             {
                 //restore blocked, let it can be recycle
@@ -38,7 +39,8 @@ namespace Locus.Threading
                 lastTale = messageNode;
 
                 //set current Thread
-                m_CurrentThread = Thread.CurrentThread;
+                m_CurrentThread = currentThread;
+
                 try
                 {
                     OnMessage(messageNode.Item);
@@ -84,8 +86,10 @@ namespace Locus.Threading
         }
 
         //get next node and mark it as blocked
+        //if it's not null, we dont need to execute exchange function
         static SingleNode<T> GetNext(SingleNode<T> prev)
         {
+            if (prev.Next != null) return prev.Next;
             return Interlocked.Exchange(ref prev.Next, Blocked);
         }
     }
