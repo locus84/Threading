@@ -6,98 +6,36 @@ namespace Locus.Threading
 {
     public static class AwaiterExtensions
     {
-        public static IAwaitable YieldInFiber(this Task task, TaskFiber fiber)
+        public static IAwaiter YieldInFiber(this Task task, TaskFiber fiber)
         {
-            return new FiberAwaitable(task, fiber);
+            return new FiberAwaiter(task, fiber);
         }
 
-        public static IAwaitable<TResult> YieldInFiber<TResult>(this Task<TResult> task, TaskFiber fiber)
+        public static IAwaiter<TResult> YieldInFiber<TResult>(this Task<TResult> task, TaskFiber fiber)
         {
-            return new FiberAwaitable<TResult>(task, fiber);
-        }
-    }
-
-
-    internal struct FiberAwaitable<TResult> : IAwaitable<TResult>
-    {
-        Task<TResult> m_Task;
-        TaskFiber m_Fiber;
-
-        public FiberAwaitable(Task<TResult> task, TaskFiber fiber)
-        {
-            m_Task = task;
-            m_Fiber = fiber;
-        }
-
-        public IAwaiter<TResult> GetAwaiter()
-        {
-            return new FiberAwaiter<TResult>(m_Task.GetAwaiter(), m_Fiber);
+            return new FiberAwaiter<TResult>(task, fiber);
         }
     }
 
-    internal struct FiberAwaiter<TResult> : IAwaiter<TResult>
+    internal struct EnsureInFiber : IAwaiter
     {
-        public bool IsCompleted => m_Awaiter.IsCompleted;
-
-        TaskAwaiter<TResult> m_Awaiter;
+        //if it's completed in the first time, it just continue it's execution
+        public bool IsCompleted => m_Fiber.IsCurrentThread? true : false;
+        
         TaskFiber m_Fiber;
 
-        public FiberAwaiter(TaskAwaiter<TResult> awaiter, TaskFiber fiber)
+        public EnsureInFiber(TaskFiber fiber)
         {
-            m_Awaiter = awaiter;
-            m_Fiber = fiber;
-        }
-
-        public TResult GetResult()
-        {
-            return m_Awaiter.GetResult();
-        }
-
-        public void OnCompleted(Action continuation)
-        {
-            m_Fiber.EnqueueAwaitableContinuation(continuation);
-        }
-
-        public void UnsafeOnCompleted(Action continuation)
-        {
-            m_Fiber.EnqueueAwaitableContinuation(continuation);
-        }
-    }
-
-    internal struct FiberAwaitable : IAwaitable
-    {
-        Task m_Task;
-        TaskFiber m_Fiber;
-
-        public FiberAwaitable(Task task, TaskFiber fiber)
-        {
-            m_Task = task;
             m_Fiber = fiber;
         }
 
         public IAwaiter GetAwaiter()
         {
-            return new FiberAwaiter(m_Task.GetAwaiter(), m_Fiber);
-        }
-    }
-
-
-    internal struct FiberAwaiter : IAwaiter
-    {
-        public bool IsCompleted => m_Awaiter.IsCompleted;
-
-        TaskAwaiter m_Awaiter;
-        TaskFiber m_Fiber;
-
-        public FiberAwaiter(TaskAwaiter awater, TaskFiber fiber)
-        {
-            m_Awaiter = awater;
-            m_Fiber = fiber;
+            return this;
         }
 
         public void GetResult()
         {
-            m_Awaiter.GetResult();
         }
 
         public void OnCompleted(Action continuation)
@@ -112,28 +50,95 @@ namespace Locus.Threading
     }
 
 
-    public interface IAwaitable
+    internal struct FiberAwaiter<TResult> : IAwaiter<TResult>
     {
-        IAwaiter GetAwaiter();
+        Task<TResult> m_Task;
+        TaskFiber m_Fiber;
+
+        public FiberAwaiter(Task<TResult> task, TaskFiber fiber)
+        {
+            m_Task = task;
+            m_Task.ConfigureAwait(false);
+            m_Fiber = fiber;
+        }
+
+        public bool IsCompleted => m_Task.IsCompleted && m_Fiber.IsCurrentThread;
+
+        public IAwaiter<TResult> GetAwaiter()
+        {
+            return this;
+        }
+
+        public TResult GetResult()
+        {
+            return m_Task.Result;
+        }
+
+        public void OnCompleted(Action continuation)
+        {
+            if (m_Fiber.IsCurrentThread) continuation();
+            else m_Fiber.EnqueueAwaitableContinuation(continuation);
+        }
+
+        public void UnsafeOnCompleted(Action continuation)
+        {
+            if (m_Fiber.IsCurrentThread) continuation();
+            else m_Fiber.EnqueueAwaitableContinuation(continuation);
+        }
     }
 
-    public interface IAwaiter : ICriticalNotifyCompletion, INotifyCompletion
+    internal struct FiberAwaiter : IAwaiter
+    {
+        Task m_Task;
+        TaskFiber m_Fiber;
+
+        public FiberAwaiter(Task task, TaskFiber fiber)
+        {
+            m_Task = task;
+            m_Task.ConfigureAwait(false);
+            m_Fiber = fiber;
+        }
+
+        public bool IsCompleted => m_Task.IsCompleted && m_Fiber.IsCurrentThread;
+
+        public IAwaiter GetAwaiter()
+        {
+            return this;
+        }
+
+        public void GetResult()
+        {
+        }
+
+        public void OnCompleted(Action continuation)
+        {
+            if (m_Fiber.IsCurrentThread) continuation();
+            else m_Fiber.EnqueueAwaitableContinuation(continuation);
+        }
+
+        public void UnsafeOnCompleted(Action continuation)
+        {
+            if (m_Fiber.IsCurrentThread) continuation();
+            else m_Fiber.EnqueueAwaitableContinuation(continuation);
+        }
+    }
+    
+    public interface IAwaiter : ICriticalNotifyCompletion
     {
         bool IsCompleted { get; }
 
         void GetResult();
-    }
 
-    public interface IAwaitable<out TResult>
-    {
-        IAwaiter<TResult> GetAwaiter();
+        IAwaiter GetAwaiter();
     }
-
-    public interface IAwaiter<out TResult> : ICriticalNotifyCompletion, INotifyCompletion
+    
+    public interface IAwaiter<out TResult> : ICriticalNotifyCompletion
     {
         bool IsCompleted { get; }
 
         TResult GetResult();
+
+        IAwaiter<TResult> GetAwaiter();
     }
 
 }

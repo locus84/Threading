@@ -26,7 +26,7 @@ namespace Locus.Threading
         void DoNextTask(Task next)
         {
             m_CurrentThread = Thread.CurrentThread;
-            next.RunSynchronously(TaskScheduler.Default);
+            next.RunSynchronously();
             m_CurrentThread = null;
         }
 
@@ -46,9 +46,14 @@ namespace Locus.Threading
         internal void EnqueueAwaitableContinuation(Action continuation)
         {
             if (!IsRunning) return;
-#pragma warning disable CS4014 // 이 호출을 대기하지 않으므로 호출이 완료되기 전에 현재 메서드가 계속 실행됩니다.
+#pragma warning disable CS4014
             Enqueue(continuation);
-#pragma warning restore CS4014 // 이 호출을 대기하지 않으므로 호출이 완료되기 전에 현재 메서드가 계속 실행됩니다.
+#pragma warning restore CS4014
+        }
+
+        public IAwaiter IntoFiber()
+        {
+            return new EnsureInFiber(this);
         }
     }
 }

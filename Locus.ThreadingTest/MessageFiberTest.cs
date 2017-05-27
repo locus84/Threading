@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Locus.ThreadingTest
 {
@@ -42,15 +43,16 @@ namespace Locus.ThreadingTest
 
 
         [TestMethod]
-        public void TaskFiberTest()
+        public async Task TaskFiberTest()
         {
             //this test is to examine the actions are executed in thread safe manner in threadpool
             var tmf = new TaskFiber();
             var intVal = 0;
             var add = MultiThreadTest.RunMultiple(() => tmf.Enqueue(() => intVal++), 10000);
             var minus = MultiThreadTest.RunMultiple(() => tmf.Enqueue(() => intVal--), 10000);
-            System.Threading.Tasks.Task.WhenAll(add).Wait();
-            System.Threading.Tasks.Task.WhenAll(minus).Wait();
+            Task.WhenAll(add).Wait();
+            Task.WhenAll(minus).Wait();
+            await Task.Delay(1000);
             //the i variable must be 0, and exception count should be zero too
             Assert.IsTrue(intVal == 0);
         }

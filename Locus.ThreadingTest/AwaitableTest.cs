@@ -22,31 +22,37 @@ namespace Locus.ThreadingTest
         [TestMethod]
         public async Task ThreadContinuousTest()
         {
-            await SomeMethod().YieldInFiber(GlobalTestFiber);
-            Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
+            //so when yield in fiber called, 
+            var result = await SomeMethod().YieldInFiber(GlobalTestFiber);
+            Assert.IsTrue(result == 5);
         }
 
-        public async Task SomeMethod()
+        public async Task<int> SomeMethod()
         {
-            await SomeMethod2().YieldInFiber(GlobalTestFiber);
+            int result = 0;
+            Assert.IsFalse(GlobalTestFiber.IsCurrentThread);
+            await Task.Delay(0).YieldInFiber(GlobalTestFiber);
+            //await GlobalTestFiber.IntoFiber();
             Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
-
-            //await Task.Delay(0).YieldInFiber(GlobalTestFiber);
-            //await Task.Delay(0).YieldInFiber(GlobalTestFiber);
+            await Task.Delay(10).YieldInFiber(GlobalTestFiber);
+            Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
+            result++;
+            await Task.Delay(10).YieldInFiber(GlobalTestFiber);
+            Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
+            result++;
             //Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
-            //await Task.Delay(0).YieldInFiber(GlobalTestFiber);
-            //await Task.Delay(0).YieldInFiber(GlobalTestFiber);
-            //await Task.Yield();
-            //await Task.Yield();
-            //await Task.Yield();
-            //await Task.Yield();
-            //await Task.Yield();
+            await Task.Delay(10).YieldInFiber(GlobalTestFiber);
+            Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
+            result++;
             //Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
-            await Task.Delay(1);
-            await Task.Delay(1);
-            await Task.Delay(1);
-            await Task.Delay(1);
+            await Task.Delay(10).YieldInFiber(GlobalTestFiber);
+            Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
+            result++;
+            await Task.Delay(10).YieldInFiber(GlobalTestFiber);
+            Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
+            result++;
             //Assert.IsTrue(GlobalTestFiber.IsCurrentThread);
+            return result;
         }
 
         public async Task SomeMethod2()
