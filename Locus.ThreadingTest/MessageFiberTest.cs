@@ -39,5 +39,20 @@ namespace Locus.ThreadingTest
             Assert.IsTrue(tmf.i == 0);
             Assert.IsTrue(tmf.exceptions.Count == 0);
         }
+
+
+        [TestMethod]
+        public void TaskFiberTest()
+        {
+            //this test is to examine the actions are executed in thread safe manner in threadpool
+            var tmf = new TaskFiber();
+            var intVal = 0;
+            var add = MultiThreadTest.RunMultiple(() => tmf.Enqueue(() => intVal++), 10000);
+            var minus = MultiThreadTest.RunMultiple(() => tmf.Enqueue(() => intVal--), 10000);
+            System.Threading.Tasks.Task.WhenAll(add).Wait();
+            System.Threading.Tasks.Task.WhenAll(minus).Wait();
+            //the i variable must be 0, and exception count should be zero too
+            Assert.IsTrue(intVal == 0);
+        }
     }
 }

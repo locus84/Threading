@@ -1,213 +1,54 @@
 ﻿using System;
 using System.Threading;
-using System.Collections;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 
 namespace Locus.Threading
 {
-    public class TaskFiber// : ITaskFiber
+    public class TaskFiber
     {
-        Task tail;
-        WaitCallback callback;
-        Thread currentThread;
-        public Action<Exception> OnException;
-        public bool IsSameThread{ get { return currentThread == Thread.CurrentThread; } }
+        Task tail = Task.CompletedTask;
+        public bool IsRunning = true;
+        Thread m_CurrentThread;
+        public bool IsCurrentThread { get { return m_CurrentThread == Thread.CurrentThread; } }
 
-        public Coroutine StartCoroutine(IEnumerator enumrator)
+        public Task EnsureInFiber()
         {
-            var coroutine = new Coroutine(enumrator, this);
-            return coroutine;
+            return Task.CompletedTask;
         }
 
-        public static void StopCoroutine(Coroutine coroutine)
-        {
-            coroutine.Stop();
-        }
-
-        protected virtual void OnFiberExeption(Exception e)
-        {
-            Console.WriteLine(e.Message);
-            Console.WriteLine(e.StackTrace);
-        }
-
-       
-        public TaskFiber()
-        {
-            OnException = (e) => OnFiberExeption(e);
-            callback = (obj) => DoCallback((Task)obj);
-        }
-
-        void DoCallback(Task runHead)
-        {
-            var thread = Thread.CurrentThread;
-            Task next;
-            while(true)
-            {
-                currentThread = thread;
-                runHead.StartInSameThread();
-                if(runHead.Error != null)
-                {
-                    if(OnException != null)
-                        OnException(runHead.Error);
-                    else
-                    {
-                        Console.WriteLine(runHead.Error.Message);
-                        Console.WriteLine(runHead.Error.StackTrace);
-                    }
-                }
-                currentThread = null;
-                next = runHead.GetNext();
-                if (next == null)
-                {
-                    break;
-                }
-                runHead.Return();
-                runHead = next;
-            }
-        }
-
-        void Enqueue(Task newTail)
+        Task EnqueueInternal(Task newTail)
         {
             var oldTail = Interlocked.Exchange(ref tail, newTail);
-            if (oldTail == null)
-            {
-                ThreadPool.QueueUserWorkItem(callback, newTail);
-                return;
-            }
-            else if (oldTail.TryTail(newTail))
-                return;
-            else
-            {
-                oldTail.Return();
-                ThreadPool.QueueUserWorkItem(callback, newTail);
-            }
+            return oldTail.ContinueWith(result => DoNextTask(newTail));
         }
 
-
-        public void Enqueue(Action action)
+        void DoNextTask(Task next)
         {
-            //create a task that has not been started
-            if (action == null)
-                throw new Exception("Task is null");
-            var newTask = Task.GetFromPoolOrCreate(action);
-            newTask.MarkAsReturnable();
-            Enqueue(newTask);
+            m_CurrentThread = Thread.CurrentThread;
+            next.RunSynchronously(TaskScheduler.Default);
+            m_CurrentThread = null;
         }
 
-        public Task EnqueueWait(Action action)
+        public async Task Enqueue(Action action)
         {
-            if (action == null)
-                throw new Exception("Task is null");
-            //create a task that has not been started
-            var newTask = Task.GetFromPoolOrCreate(action);
-            Enqueue(newTask);
-            return newTask;
+            var newTask = new Task(action);
+            await EnqueueInternal(newTask);
         }
 
-        public Task<T> Enqueue<T>(Func<T> returnAction)
+        public async Task<T> Enqueue<T>(Func<T> returnAction)
         {
-            if (returnAction == null)
-                throw new Exception("Task is null");
-            //create a task that has not been started
             var newTask = new Task<T>(returnAction);
-            Enqueue(newTask);
-            return newTask;
+            await EnqueueInternal(newTask);
+            return newTask.Result;
         }
 
-        public IDisposable Schedule(Action action, float time)
+        internal void EnqueueAwaitableContinuation(Action continuation)
         {
-            var timeMs = (long)(time * 1000);
-            return Schedule(action, timeMs);
-        }
-
-        public IDisposable Schedule(Action action, int timeMs)
-        {
-            ScheduleTimer schedule = null;
-            //duetime is important.
-            schedule = new ScheduleTimer(new Timer(obj =>
-                {
-                    schedule.DisposeTimer();
-                    if(!schedule.IsDisposed)
-                        Enqueue(() => { if(!schedule.IsDisposed) action(); });
-                }, null, timeMs, 5000));
-            return schedule;
-        }
-
-        public IDisposable ScheduleOnInterval(Action action, float dueTime, float interval)
-        {
-            var dueTimeMs = (long)(dueTime * 1000);
-            var intervalMs = (long)(interval * 1000);
-            return ScheduleOnInterval(action, dueTimeMs, intervalMs);
-        }
-
-        public IDisposable ScheduleOnInterval(Action action, int dueTimeMs, int intervalMs)
-        {
-            ScheduleTimer schedule = null;
-            schedule = new ScheduleTimer(new Timer(obj =>
-                {
-                    if(schedule.IsDisposed)
-                        schedule.DisposeTimer();
-                    else
-                        Enqueue(() => { if(!schedule.IsDisposed) action(); });
-                }, null, dueTimeMs, intervalMs));
-            return schedule;
-        }
-
-        public IDisposable ScheduleOnInterval(Action action, float interval)
-        {
-            return ScheduleOnInterval(action, interval, interval);
-        }
-
-        public IDisposable ScheduleOnInterval(Action action, long intervalMs)
-        {
-            return ScheduleOnInterval(action, intervalMs, intervalMs);
-        }
-
-        public Coroutine WhenAll(IEnumerable<Coroutine> coroutines)
-        {
-            return StartCoroutine(_WhenAll(coroutines));
-        }
-
-        IEnumerator _WhenAll(IEnumerable<Coroutine> coroutines)
-        {
-            foreach (var thisCoroutine in coroutines)
-                yield return thisCoroutine;
-        }
-
-        public Coroutine WhenAll(IEnumerable<Task> tasks)
-        {
-            return StartCoroutine(_WhenAll(tasks));
-        }
-
-        IEnumerator _WhenAll(IEnumerable<Task> tasks)
-        {
-            foreach (var thisTask in tasks)
-                yield return thisTask;
-        }
-
-        //use like a cancellation token
-        class ScheduleTimer : IDisposable
-        {
-            Timer m_Timer;
-
-            public ScheduleTimer(Timer timerToDispose)
-            {
-                m_Timer = timerToDispose;
-            }
-
-            public void DisposeTimer()
-            {
-                var timerToDispose = Interlocked.Exchange(ref m_Timer, null);
-                if(timerToDispose != null)
-                    timerToDispose.Dispose();
-            }
-
-            public bool IsDisposed { get; private set; }
-            public void Dispose() {
-                IsDisposed = true;
-                DisposeTimer();
-            }
+            if (!IsRunning) return;
+#pragma warning disable CS4014 // 이 호출을 대기하지 않으므로 호출이 완료되기 전에 현재 메서드가 계속 실행됩니다.
+            Enqueue(continuation);
+#pragma warning restore CS4014 // 이 호출을 대기하지 않으므로 호출이 완료되기 전에 현재 메서드가 계속 실행됩니다.
         }
     }
 }
