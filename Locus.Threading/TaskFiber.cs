@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Locus.Threading
 {
-    public class TaskFiber
+    public class TaskFiber : IFiber
     {
         Task tail = Task.CompletedTask;
         Thread m_CurrentThread;
@@ -15,12 +15,6 @@ namespace Locus.Threading
         {
             var oldTail = Interlocked.Exchange(ref tail, newTail);
             return oldTail.ContinueWith(prev => DoNextTask(newTail), TaskContinuationOptions.ExecuteSynchronously);
-        }
-
-        Task<T> EnqueueInternal<T>(Task<T> newTail)
-        {
-            var oldTail = Interlocked.Exchange(ref tail, newTail);
-            return oldTail.ContinueWith(prev => DoNextTaskTyped(newTail), TaskContinuationOptions.ExecuteSynchronously);
         }
 
         void DoNextTask(Task next)
@@ -58,7 +52,8 @@ namespace Locus.Threading
         public Task<T> Enqueue<T>(Func<T> func)
         {
             var newTask = new Task<T>(func);
-            return EnqueueInternal(newTask);
+            EnqueueInternal(newTask);
+            return newTask;
         }
 
         /// <summary>
@@ -79,21 +74,17 @@ namespace Locus.Threading
         /// <returns></returns>
         public Task<T> Enqueue<T>(Task<T> task)
         {
-            return EnqueueInternal(task);
-        }
-
-        internal void EnqueueAwaitableContinuation(Action continuation)
-        {
-            Enqueue(continuation);
+            EnqueueInternal(task);
+            return task;
         }
 
         /// <summary>
         /// Moves execution context to this fiber.
         /// </summary>
         /// <returns>Awaitable struct</returns>
-        public IAwaiter IntoFiber()
+        void IFiber.EnqueueAwaitableContinuation(Action action)
         {
-            return new EnsureInFiber(this);
+            Enqueue(action);
         }
     }
 }

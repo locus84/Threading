@@ -6,6 +6,21 @@ namespace Locus.Threading
 {
     public static class AwaiterExtensions
     {
+        public static IAwaiter IntoFiber<T>(this Task task, MessageFiber<T> fiber)
+        {
+            return new FiberAwaiter(task, fiber);
+        }
+
+        public static IAwaiter<TResult> IntoFiber<TResult, T>(this Task<TResult> task, MessageFiber<T> fiber)
+        {
+            return new FiberAwaiter<TResult>(task, fiber);
+        }
+
+        public static IAwaiter IntoFiber<T>(this MessageFiber<T> fiber)
+        {
+            return new EnsureInFiber(fiber);
+        }
+
         public static IAwaiter IntoFiber(this Task task, TaskFiber fiber)
         {
             return new FiberAwaiter(task, fiber);
@@ -15,16 +30,21 @@ namespace Locus.Threading
         {
             return new FiberAwaiter<TResult>(task, fiber);
         }
+
+        public static IAwaiter IntoFiber(this TaskFiber fiber)
+        {
+            return new EnsureInFiber(fiber);
+        }
     }
 
     internal struct EnsureInFiber : IAwaiter
     {
         //if it's completed in the first time, it just continue it's execution
         public bool IsCompleted => m_Fiber.IsCurrentThread? true : false;
-        
-        TaskFiber m_Fiber;
 
-        public EnsureInFiber(TaskFiber fiber)
+        IFiber m_Fiber;
+
+        public EnsureInFiber(IFiber fiber)
         {
             m_Fiber = fiber;
         }
@@ -53,9 +73,9 @@ namespace Locus.Threading
     internal struct FiberAwaiter<TResult> : IAwaiter<TResult>
     {
         Task<TResult> m_Task;
-        TaskFiber m_Fiber;
+        IFiber m_Fiber;
 
-        public FiberAwaiter(Task<TResult> task, TaskFiber fiber)
+        public FiberAwaiter(Task<TResult> task, IFiber fiber)
         {
             m_Task = task;
             m_Task.ConfigureAwait(false);
@@ -90,9 +110,9 @@ namespace Locus.Threading
     internal struct FiberAwaiter : IAwaiter
     {
         Task m_Task;
-        TaskFiber m_Fiber;
+        IFiber m_Fiber;
 
-        public FiberAwaiter(Task task, TaskFiber fiber)
+        public FiberAwaiter(Task task, IFiber fiber)
         {
             m_Task = task;
             m_Task.ConfigureAwait(false);
@@ -141,4 +161,9 @@ namespace Locus.Threading
         IAwaiter<TResult> GetAwaiter();
     }
 
+    internal interface IFiber
+    {
+        bool IsCurrentThread { get; }
+        void EnqueueAwaitableContinuation(Action action);
+    }
 }
