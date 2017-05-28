@@ -33,7 +33,8 @@ await myFiber.Enqueue(myTask);
 //or
 var myInt = await myFiber.Enqueue(new Task<int>(() => 0));
 ```
-You also can enqueue async method into TaskFiber.
+You also can enqueue async method into TaskFiber.\
+(I do **not** recommand this, call async method directly, then use **IntoFiber()** function introduced below)
 ```cs
 myFiber.Enqueue(async () => await Dosomthing());
 ```
@@ -119,6 +120,62 @@ async Task SomeAsyncFunction()
     //returns true
 }
 ```
+If you wanna await queued async function, things get a bit tricky.
+```cs
+async Task SomeFunction()
+{
+    var task = myFiber.Enqueue(() => SomeAsyncFunction());
+    //the task variable is acutally Task<Task>.
+    //Enqueued Task is just starting of async function, and nested Task is acutal async Task. 
+
+    await task; //this waits the execution starting of async function in TaskFiber
+    await task.Result; //this waits actual async task of SomeAsyncFunction returns
+
+    //same as generic case.
+    var genericTask = myFiber.Enqueue(() => SomeAsyncFunctionGeneric());
+    //genericTask is Task<Task<int>>
+    await genericTask; //this waits the execution starting of async function in TaskFiber
+    var myInt = await genericTask.Result; //this waits actual async task of SomeAsyncFunction returns
+}
+
+async Task SomeAsyncFunction()
+{
+    ...
+}
+
+
+async Task<int> SomeAsyncFunctionGeneric()
+{
+    ...
+}
+```
+So here is simple alternative.
+```cs
+async Task SomeFunction()
+{
+    await SomeAsyncFunction();
+
+    var myInt = await SomeAsyncFunctionGeneric();
+}
+
+async Task SomeAsyncFunction()
+{
+    await myFiber.IntoFiber();
+    ...
+}
+
+
+async Task<int> SomeAsyncFunctionGeneric()
+{
+    await myFiber.IntoFiber();
+    ...
+}
+```
+
+
+
+
+
 
 **DO NOT** Enqueue already started Task
 ```cs

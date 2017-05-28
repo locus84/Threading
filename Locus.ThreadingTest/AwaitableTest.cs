@@ -100,6 +100,42 @@ namespace Locus.ThreadingTest
 
             }
         }
+
+        [TestMethod]
+        public void EnqueueTypeTest()
+        {
+            var myFiber = new TaskFiber();
+            
+            //an action
+            myFiber.Enqueue(() => { });
+            //a func
+            myFiber.Enqueue(() => 0 );
+            //a task
+            myFiber.Enqueue(new Task(() => { }));
+            //a task<T>
+            myFiber.Enqueue(new Task<int>(() => 0));
+            //an async action
+            myFiber.Enqueue(async () => { await Task.Delay(0); });
+            //an async func
+            myFiber.Enqueue(async () => { await Task.Delay(0); return 0; });
+            //an async task
+            myFiber.Enqueue(() => EnqueueTestFunction());
+            //an async task<T>
+            myFiber.Enqueue(() => EnqueueTestFunctionResult());
+        }
+
+
+
+        async Task EnqueueTestFunction()
+        {
+            await Task.Delay(0);
+        }
+
+        async Task<int> EnqueueTestFunctionResult()
+        {
+            await Task.Delay(0);
+            return 0;
+        }
     }
 }
 
