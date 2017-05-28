@@ -96,9 +96,7 @@ namespace Locus.Threading
 
         public Task<T> EnqueueTask(Task<T> task)
         {
-            var newTail = SingleTaskNode.PopFromPool();
-            newTail.Item = task;
-            EnqueueInternal(newTail);
+            EnqueueTask(task);
             return task;
         }
 

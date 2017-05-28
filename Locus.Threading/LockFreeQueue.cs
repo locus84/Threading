@@ -8,34 +8,38 @@
 
 //namespace Locus.Threading
 //{
-//    public class LockFreeQueue<T> {
-        
+//    public class LockFreeQueue<T>
+//    {
 //        SingleNode<T> head;
 //        SingleNode<T> tail;
 //        int m_Count = 0;
 
 //        public int Count { get { return m_Count; } }
 
-//        public LockFreeQueue() {
+//        public LockFreeQueue()
+//        {
 //            head = tail = new SingleNode<T>();
 //        }
-        
-//        public void Enqueue(T item) {
+
+//        public void Enqueue(T item)
+//        {
 
 //            Interlocked.Increment(ref m_Count);
 //            SingleNode<T> node, oldTail, oldNext;
-//            node = NodePool<T>.Pop();
+//            node = SingleNode<T>.PopFromPool();
 //            node.Item = item;
 
-//            while (true) {
+//            while (true)
+//            {
 
 //                oldTail = tail;
-//                oldNext = oldTail.Next;
+//                oldNext = (SingleNode<T>)oldTail.Next;
 
 //                if (oldTail != tail)
 //                    continue;
 
-//                if (oldNext != null) {
+//                if (oldNext != null)
+//                {
 //                    SingleNode<T>.CAS(ref tail, oldNext, oldTail);
 //                    continue;
 //                }
@@ -57,7 +61,7 @@
 //        {
 //            int added = 0;
 //            T item;
-//            while(TryDequeue(out item))
+//            while (TryDequeue(out item))
 //            {
 //                added++;
 //                addTo.Add(item);
@@ -70,9 +74,9 @@
 //            if (head == tail)
 //                return false;
 //            var currentNode = head.Next;
-//            while(currentNode != null)
+//            while (currentNode != null)
 //            {
-//                if(object.ReferenceEquals(currentNode.Item, item))
+//                if (object.ReferenceEquals(currentNode.Item, item))
 //                    return true;
 //                else
 //                    currentNode = currentNode.Next;
@@ -85,14 +89,15 @@
 //        {
 //            SingleNode<T> oldTail, oldNext, oldHead;
 
-//            while (true) {
+//            while (true)
+//            {
 
 //                oldHead = head;
 //                oldTail = tail;
 //                oldNext = oldHead.Next;
 
 //                //hazard
-//                if (oldHead != head) 
+//                if (oldHead != head)
 //                    continue;
 //                if (oldNext == null)
 //                {
@@ -100,22 +105,24 @@
 //                    return false;
 //                }
 
-//                if (oldHead == oldTail) {
+//                if (oldHead == oldTail)
+//                {
 //                    Interlocked.CompareExchange(ref tail, oldNext, oldTail);
 //                    continue;
 //                }
 
 //                item = oldNext.Item;
-//                if(Interlocked.CompareExchange(ref head, oldNext, oldHead) == oldHead)
+//                if (Interlocked.CompareExchange(ref head, oldNext, oldHead) == oldHead)
 //                    break;
 //            }
 
-//            NodePool<T>.Push(oldNext);
+//            oldNext.PushToPool();
 //            Interlocked.Decrement(ref m_Count);
 //            return true;
 //        }
 
-//        public T Dequeue() {
+//        public T Dequeue()
+//        {
 //            T result;
 //            TryDequeue(out result);
 //            return result;
