@@ -69,7 +69,7 @@ But here comes the rescue. **TaskFiber.IntoFiber()**
 ```cs
 async Task SomeAsyncFunction()
 {
-    //....
+    ...
     await Task.Delay(1000);
     //simply await TaskFiber.IntoFiber() here.
     await myFiber.IntoFiber();
@@ -119,6 +119,27 @@ async Task SomeAsyncFunction()
     //returns true
 }
 ```
+
+**DO NOT** Enqueue already started Task
+```cs
+void SomeFunction()
+{
+    var asyncTask = SomeAsyncFunction();
+    myFiber.Enqueue(asyncTask);//will raise exception
+    //this asyncTask is already running Task.
+    //So the execution of the task can't be scheduled!!
+    
+    //consider using IntoFiber in the async function,
+    //or enqueue as an async action
+    myFiber.Enqueue(() => SomeAsyncFunction());
+}
+
+async Task SomeAsyncFunction()
+{
+    ...
+}
+```
+
 <br />
 
 
