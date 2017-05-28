@@ -50,9 +50,11 @@ namespace Locus.ThreadingTest
             var intVal = 0;
             var add = MultiThreadTest.RunMultiple(() => tmf.Enqueue(() => intVal++), 10000);
             var minus = MultiThreadTest.RunMultiple(() => tmf.Enqueue(() => intVal--), 10000);
+
             Task.WhenAll(add).Wait();
             Task.WhenAll(minus).Wait();
-            await Task.Delay(1000);
+            //this await anything in this fiber
+            await tmf.IntoFiber();
             //the i variable must be 0, and exception count should be zero too
             Assert.IsTrue(intVal == 0);
         }

@@ -20,7 +20,13 @@ namespace Locus.Threading
         Task EnqueueInternal(Task newTail)
         {
             var oldTail = Interlocked.Exchange(ref tail, newTail);
-            return oldTail.ContinueWith(result => DoNextTask(newTail));
+            return oldTail.ContinueWith(prev => DoNextTask(newTail), TaskContinuationOptions.ExecuteSynchronously);
+        }
+
+        Task<T> EnqueueInternal<T>(Task<T> newTail)
+        {
+            var oldTail = Interlocked.Exchange(ref tail, newTail);
+            return oldTail.ContinueWith(prev => DoNextTaskTyped(newTail), TaskContinuationOptions.ExecuteSynchronously);
         }
 
         void DoNextTask(Task next)
@@ -30,17 +36,24 @@ namespace Locus.Threading
             m_CurrentThread = null;
         }
 
-        public async Task Enqueue(Action action)
+        T DoNextTaskTyped<T>(Task<T> next)
         {
-            var newTask = new Task(action);
-            await EnqueueInternal(newTask);
+            m_CurrentThread = Thread.CurrentThread;
+            next.RunSynchronously();
+            m_CurrentThread = null;
+            return next.Result;
         }
 
-        public async Task<T> Enqueue<T>(Func<T> returnAction)
+        public Task Enqueue(Action action)
+        {
+            var newTask = new Task(action);
+            return EnqueueInternal(newTask);
+        }
+
+        public Task<T> Enqueue<T>(Func<T> returnAction)
         {
             var newTask = new Task<T>(returnAction);
-            await EnqueueInternal(newTask);
-            return newTask.Result;
+            return EnqueueInternal(newTask);
         }
 
         internal void EnqueueAwaitableContinuation(Action continuation)
