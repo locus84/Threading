@@ -6,12 +6,12 @@ namespace Locus.Threading
 {
     public static class AwaiterExtensions
     {
-        public static IAwaiter YieldInFiber(this Task task, TaskFiber fiber)
+        public static IAwaiter IntoFiber(this Task task, TaskFiber fiber)
         {
             return new FiberAwaiter(task, fiber);
         }
 
-        public static IAwaiter<TResult> YieldInFiber<TResult>(this Task<TResult> task, TaskFiber fiber)
+        public static IAwaiter<TResult> IntoFiber<TResult>(this Task<TResult> task, TaskFiber fiber)
         {
             return new FiberAwaiter<TResult>(task, fiber);
         }
