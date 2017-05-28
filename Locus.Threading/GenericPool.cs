@@ -1,7 +1,8 @@
-﻿using System;
-
+﻿
 namespace Locus.Threading
 {
+    //when it comes to performance, System.Concurrent offers better than this.
+    //so consider using concurrentbag<T> later on
     public static class GenericPool<T>
     {
         static LockFreeQueue<T> pool = new LockFreeQueue<T>();

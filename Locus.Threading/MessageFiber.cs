@@ -7,6 +7,10 @@ namespace Locus.Threading
     {
         SingleNode<T> head;
         SingleNode<T> tail;
+        //the last tale, holds latest node that has been executed.
+        //we cannot find it with 'Next'variable becuase we block 'Next' with 'Blocked'
+        //to avoid race condition.
+        //so when start executing new message, we have to return this node to pool
         SingleNode<T> lastTale;
         Thread m_CurrentThread;
         public bool IsCurrentThread { get { return m_CurrentThread == Thread.CurrentThread; } }
