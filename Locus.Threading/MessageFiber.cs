@@ -15,7 +15,7 @@ namespace Locus.Threading
         Thread m_CurrentThread;
         public bool IsCurrentThread { get { return m_CurrentThread == Thread.CurrentThread; } }
 
-        static readonly MessageNodeBase Blocked = new MessageNodeBase();
+        static readonly MessageNode<T> Blocked = new MessageNode<T>();
 
         public MessageFiber()
         {

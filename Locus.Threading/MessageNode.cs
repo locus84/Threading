@@ -4,17 +4,19 @@ using System.Threading.Tasks;
 
 namespace Locus.Threading
 {
-    internal class MessageNodeBase
+    internal abstract class MessageNodeBase
     {
         public MessageNodeBase Next;
-        public virtual bool TryInvoke() { return false; }
-        public virtual void PushToPool() { }
-        public virtual void Clear() { }
+        public abstract bool TryInvoke();
+        public abstract void PushToPool();
+        public abstract void Clear();
     }
 
     internal class MessageNode<T> : MessageNodeBase
     {
         public T Message;
+
+        public override bool TryInvoke() { return false; }
 
         public override void Clear()
         {
