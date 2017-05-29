@@ -58,14 +58,14 @@ namespace Locus.Threading
     }
 
 
-    //make this static so make use of thread safe functionality
+    ////make this static so make use of thread safe functionality
     internal static class NodePool<T> where T : MessageNodeBase, new()
     {
         static NodePool()
         {
             head = tail = new T();
         }
-        
+
         //as this class is generic, this variable will ge generated per type
         private static MessageNodeBase head, tail;
 
@@ -96,4 +96,47 @@ namespace Locus.Threading
             return (T)result;
         }
     }
+
+
+    //make this static so make use of thread safe functionality
+    //internal static class NodePool<T> where T : MessageNodeBase, new()
+    //{
+    //    private static T head;
+
+    //    static NodePool()
+    //    {
+    //        head = new T();
+    //    }
+
+    //    public static void Push(T newNode)
+    //    {
+    //        newNode.Clear();
+    //        //newNode.Next = null;
+    //        //var prevTail = Atomic.Swap(ref tail, newNode);
+    //        //prevTail.Next = newNode;
+
+    //        do
+    //        {
+    //            newNode.Next = head.Next;
+    //        } while (!SyncMethods.CAS(ref head.Next, newNode.Next, newNode));
+    //        return;
+    //    }
+
+    //    public static T Pop()
+    //    {
+    //        //we don't use head always, just get next of the head
+    //        //if nex of the head is null, make a new instance of the node.
+    //        MessageNodeBase node;
+
+    //        do
+    //        {
+    //            node = head.Next;
+    //            if (node == null)
+    //            {
+    //                return new T();
+    //            }
+    //        } while (!SyncMethods.CAS(ref head.Next, node, node.Next));
+    //        return (T)node;
+    //    }
+    //}
 }
