@@ -1,5 +1,4 @@
-﻿
-namespace Locus.Threading
+﻿namespace Locus.Threading
 {
     public static class GenericPool<T>
     {

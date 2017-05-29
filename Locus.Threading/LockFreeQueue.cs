@@ -1,4 +1,5 @@
 ﻿//http://wiki.unity3d.com/index.php/Lock_Free_Queue
+//this is messed up, node pool is not acutally thread safe, tested it for 10,- times.
 //take a look for it
 //http://www.boyet.com/articles/lockfreequeue.html
 //idea came from here

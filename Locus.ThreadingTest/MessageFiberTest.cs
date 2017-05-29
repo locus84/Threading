@@ -1,10 +1,6 @@
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Locus.Threading;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Locus.ThreadingTest
