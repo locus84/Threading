@@ -42,15 +42,7 @@ void SomeFunction()
 
 async Task SomeAsyncFunction(string log)
 {
-    //You can check where is your context anytime
-    Console.WriteLine(log + " : "  + myFiber.IsCurrentThread);
-    // - "Action Styple : true"
-    // - "Direct call : false"
-
-    await Task.Delay(1000);
-    //after calling above await keyword, the execution context can be somewhere else
-    Console.WriteLine(myFiber.IsCurrentThread);
-    //returns always false
+    ...
 }
 ```
 \
