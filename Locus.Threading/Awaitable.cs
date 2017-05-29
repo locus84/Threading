@@ -40,7 +40,7 @@ namespace Locus.Threading
     internal struct EnsureInFiber : IAwaiter
     {
         //if it's completed in the first time, it just continue it's execution
-        public bool IsCompleted => m_Fiber.IsCurrentThread? true : false;
+        public bool IsCompleted => m_Fiber.IsCurrentThread;
 
         IFiber m_Fiber;
 

@@ -13,7 +13,7 @@ namespace Locus.Threading
 
         Task EnqueueInternal(Task newTail)
         {
-            var oldTail = Interlocked.Exchange(ref tail, newTail);
+            var oldTail = Atomic.Swap(ref tail, newTail);
             return oldTail.ContinueWith(prev => DoNextTask(newTail), TaskContinuationOptions.ExecuteSynchronously);
         }
 

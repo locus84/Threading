@@ -6,22 +6,21 @@ namespace Locus.Threading
 {
     public abstract class MessageFiber<T> : IFiber
     {
-        SingleNodeBase head;
-        SingleNodeBase tail;
         //the last tale, holds latest node that has been executed.
         //we cannot find it with 'Next'variable becuase we block 'Next' with 'Blocked'
         //to avoid race condition.
         //so when start executing new message, we have to return this node to pool
-        SingleNodeBase lastTale;
+        MessageNodeBase tail;
+        MessageNodeBase lastTale;
         Thread m_CurrentThread;
         public bool IsCurrentThread { get { return m_CurrentThread == Thread.CurrentThread; } }
 
-        static readonly SingleNodeBase Blocked = new SingleNodeBase();
+        static readonly MessageNodeBase Blocked = new MessageNodeBase();
 
         public MessageFiber()
         {
             RunInternalWaitCallback = RunInternal;
-            head = tail = lastTale = new SingleNode<T>() { Next = Blocked };
+            tail = lastTale = new MessageNode<T>() { Next = Blocked };
         }
 
         protected abstract void OnMessage(T message);
@@ -32,7 +31,8 @@ namespace Locus.Threading
         //TODO: make this to run bunch of them
         void RunInternal(object obj)
         {
-            var messageNode = (SingleNodeBase)obj;
+            var messageNode = (MessageNodeBase)obj;
+            
             //store current Thread to reduce property call
             var currentThread = Thread.CurrentThread;
 
@@ -48,11 +48,15 @@ namespace Locus.Threading
 
                 try
                 {
-                    if(!messageNode.TryInvokeSelf())
-                    OnMessage((messageNode as SingleNode<T>).Item);
+                    if(!messageNode.TryInvoke())
+                    {
+                        OnMessage(((MessageNode<T>)messageNode).Message);
+                    }
+                        
                 }
                 catch (Exception e)
                 {
+                    var type = messageNode.GetType();
                     OnException(e);
                 }
 
@@ -74,22 +78,22 @@ namespace Locus.Threading
         /// <param name="message">Message to enqueue</param>
         public void EnqueueMessage(T message)
         {
-            var newTail = SingleNode<T>.PopFromPool();
-            newTail.Item = message;
+            var newTail = NodePool<MessageNode<T>>.Pop();
+            newTail.Message = message;
             EnqueueInternal(newTail);
         }
 
         public void EnqueueAction(Action action)
         {
-            var newTail = SingleActionNode.PopFromPool();
-            newTail.Item = action;
+            var newTail = NodePool<ActionMessageNode>.Pop();
+            newTail.Message = action;
             EnqueueInternal(newTail);
         }
 
         public Task EnqueueTask(Task task)
         {
-            var newTail = SingleTaskNode.PopFromPool();
-            newTail.Item = task;
+            var newTail = NodePool<TaskMessageNode>.Pop();
+            newTail.Message = task;
             EnqueueInternal(newTail);
             return task;
         }
@@ -100,26 +104,25 @@ namespace Locus.Threading
             return task;
         }
 
-        void EnqueueInternal(SingleNodeBase newTail)
+        void EnqueueInternal(MessageNodeBase newTail)
         {
-            var oldTail = Interlocked.Exchange(ref tail, newTail);
+            var oldTail = Atomic.Swap(ref tail, newTail);
             //if oldtail is null or tailing is failed
             if (!TryTail(oldTail, newTail))
                 ThreadPool.QueueUserWorkItem(RunInternalWaitCallback, newTail);
         }
 
         //if next is already blocked, then previous actions are already executed.
-        static bool TryTail(SingleNodeBase prev, SingleNodeBase next)
+        static bool TryTail(MessageNodeBase prev, MessageNodeBase next)
         {
-            return SingleNodeBase.CAS(ref prev.Next, next, null);
+            return Atomic.SwapIfSame(ref prev.Next, next, null);
         }
 
         //get next node and mark it as blocked
         //if it's not null, we dont need to execute exchange function
-        static SingleNodeBase GetNext(SingleNodeBase prev)
+        static MessageNodeBase GetNext(MessageNodeBase prev)
         {
-            if (prev.Next != null) return prev.Next;
-            return Interlocked.Exchange(ref prev.Next, Blocked);
+            return Atomic.Swap(ref prev.Next, Blocked);
         }
 
         void IFiber.EnqueueAwaitableContinuation(Action action)
