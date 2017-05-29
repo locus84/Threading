@@ -6,6 +6,13 @@
     <IncludeSymbols>True</IncludeSymbols>
     <IncludeSource>True</IncludeSource>
     <Version>1.0.0</Version>
+    <Authors>Locus</Authors>
+    <Company>Third Door</Company>
+    <Description>Actor based concurrency library that supports TPL and async-await for .Net Core</Description>
+    <Copyright>MIT</Copyright>
+    <PackageProjectUrl>https://github.com/locus84/Threading</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/locus84/Threading</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
 </Project>

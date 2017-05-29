@@ -1,58 +1,57 @@
 ﻿using Locus.Threading;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Locus.ThreadingTest
 {
-    [TestClass]
     public class AwaitableTest
     {
         static TaskFiber TestTaskFiber = new TaskFiber();
         static TestMsgFiber TestMeesageFiber = new TestMsgFiber();
 
 
-        [TestMethod]
+        [Fact]
         public async Task TestAsyncStartMethod()
         {
             await FiberYieldTest().IntoFiber(TestTaskFiber);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task ThreadContinuousTest()
         {
             //so when yield in fiber called, 
             var result = await SomeMethod();
-            Assert.IsTrue(result == 5);
+            Assert.True(result == 5);
         }
 
         public async Task<int> SomeMethod()
         {
             int result = 0;
-            Assert.IsFalse(TestTaskFiber.IsCurrentThread);
+            Assert.False(TestTaskFiber.IsCurrentThread);
             await TestMeesageFiber.IntoFiber();
 
             await TestTaskFiber.IntoFiber();
-            Assert.IsTrue(TestTaskFiber.IsCurrentThread);
+            Assert.True(TestTaskFiber.IsCurrentThread);
 
             await Task.Delay(10).IntoFiber(TestTaskFiber);
-            Assert.IsTrue(TestTaskFiber.IsCurrentThread);
+            Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
             await Task.Delay(10).IntoFiber(TestTaskFiber);
-            Assert.IsTrue(TestTaskFiber.IsCurrentThread);
+            Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
             await Task.Delay(10).IntoFiber(TestTaskFiber);
-            Assert.IsTrue(TestTaskFiber.IsCurrentThread);
+            Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
             await Task.Delay(10).IntoFiber(TestTaskFiber);
-            Assert.IsTrue(TestTaskFiber.IsCurrentThread);
+            Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
             await Task.Delay(10).IntoFiber(TestTaskFiber);
-            Assert.IsTrue(TestTaskFiber.IsCurrentThread);
+            Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
             return result;
         }
@@ -66,16 +65,16 @@ namespace Locus.ThreadingTest
         public async Task FiberYieldTest()
         {
             Console.WriteLine("hgaha");
-            Assert.IsFalse(TestTaskFiber.IsCurrentThread);
+            Assert.False(TestTaskFiber.IsCurrentThread);
             await Task.Delay(5);
-            Assert.IsTrue(TestTaskFiber.IsCurrentThread);
+            Assert.True(TestTaskFiber.IsCurrentThread);
             await Task.Delay(5);
-            Assert.IsTrue(TestTaskFiber.IsCurrentThread);
+            Assert.True(TestTaskFiber.IsCurrentThread);
             await Task.Delay(5);
-            Assert.IsTrue(TestTaskFiber.IsCurrentThread);
+            Assert.True(TestTaskFiber.IsCurrentThread);
         }
 
-        [TestMethod]
+        [Fact]
         public Task AwaitForcingStartOfATask()
         {
             //this test is to see whether task is forced starting by await.
@@ -87,7 +86,7 @@ namespace Locus.ThreadingTest
         }
 
 
-        [TestMethod]
+        [Fact]
         public void SnycronisedRunTest()
         {
             var newTask = Task.Delay(1000);
@@ -95,7 +94,7 @@ namespace Locus.ThreadingTest
             {
                 newTask.RunSynchronously();
                 //above task will fail
-                Assert.Fail();
+                Assert.True(true);
             }
             catch
             {
@@ -103,15 +102,15 @@ namespace Locus.ThreadingTest
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void EnqueueTypeTest()
         {
             var myFiber = new TaskFiber();
-            
+
             //an action
             myFiber.Enqueue(() => { });
             //a func
-            myFiber.Enqueue(() => 0 );
+            myFiber.Enqueue(() => 0);
             //a task
             myFiber.Enqueue(new Task(() => { }));
             //a task<T>

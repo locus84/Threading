@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Locus.Threading", "Locus.Threading\Locus.Threading.csproj", "{7B5286DF-0E54-471B-9753-F8BEAA9E8626}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Locus.ThreadingTest", "Locus.ThreadingTest\Locus.ThreadingTest.csproj", "{2F5451D8-9C0A-489C-A786-D83CB2B80009}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Locus.ThreadingTest", "Locus.ThreadingTest\Locus.ThreadingTest.csproj", "{CF595F21-3000-42FE-934D-4EFE79D01F13}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{7B5286DF-0E54-471B-9753-F8BEAA9E8626}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7B5286DF-0E54-471B-9753-F8BEAA9E8626}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7B5286DF-0E54-471B-9753-F8BEAA9E8626}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2F5451D8-9C0A-489C-A786-D83CB2B80009}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2F5451D8-9C0A-489C-A786-D83CB2B80009}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2F5451D8-9C0A-489C-A786-D83CB2B80009}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2F5451D8-9C0A-489C-A786-D83CB2B80009}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF595F21-3000-42FE-934D-4EFE79D01F13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF595F21-3000-42FE-934D-4EFE79D01F13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF595F21-3000-42FE-934D-4EFE79D01F13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF595F21-3000-42FE-934D-4EFE79D01F13}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

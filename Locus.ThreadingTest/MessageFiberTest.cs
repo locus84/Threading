@@ -1,7 +1,7 @@
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Locus.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Locus.ThreadingTest
 {
@@ -10,7 +10,7 @@ namespace Locus.ThreadingTest
         public int i = 0;
         protected override void OnException(Exception exception)
         {
-            Assert.Fail();
+            Assert.True(true);
         }
 
         protected override void OnMessage(int message)
@@ -19,11 +19,10 @@ namespace Locus.ThreadingTest
         }
     }
 
-    [TestClass]
     public class MessageFiberTest
     {
 
-        [TestMethod]
+        [Fact]
         public async Task MessageFiberSpeedTest()
         {
             //this test is to examine the actions are executed in thread safe manner in threadpool
@@ -35,12 +34,12 @@ namespace Locus.ThreadingTest
             //this await anything in this fiber
             await tmf.EnqueueTask(new Task(() => { })).IntoFiber(tmf);
             //the i variable must be 0, and exception count should be zero too
-            Assert.IsTrue(tmf.IsCurrentThread);
-            Assert.IsTrue(tmf.i == 0);
+            Assert.True(tmf.IsCurrentThread);
+            Assert.True(tmf.i == 0);
         }
 
 
-        [TestMethod]
+        [Fact]
         public async Task TaskFiberSpeedTest()
         {
             //this test is to examine the actions are executed in thread safe manner in threadpool
@@ -53,7 +52,7 @@ namespace Locus.ThreadingTest
             //this await anything in this fiber
             await tmf.IntoFiber();
             //the i variable must be 0, and exception count should be zero too
-            Assert.IsTrue(intVal == 0);
+            Assert.True(intVal == 0);
         }
     }
 }
