@@ -40,7 +40,7 @@ void SomeFunction()
     myFiber.Enqueue(SomeAsyncFunction()); // this will raise an exception that task is already started
 }
 
-async Task SomeAsyncFunction(string log)
+async Task SomeAsyncFunction()
 {
     ...
 }
