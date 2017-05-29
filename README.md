@@ -33,35 +33,50 @@ await myFiber.Enqueue(myTask);
 //or
 var myInt = await myFiber.Enqueue(new Task<int>(() => 0));
 ```
-You also can enqueue async method into TaskFiber.\
-(I do **not** recommand this, call async method directly, then use **IntoFiber()** function introduced below)
+But **DO NOT** enqueue async method directly
 ```cs
-myFiber.Enqueue(async () => await Dosomthing());
+void SomeFunction()
+{
+    myFiber.Enqueue(SomeAsyncFunction()); // this will raise an exception that task is already started
+}
+
+async Task SomeAsyncFunction(string log)
+{
+    //You can check where is your context anytime
+    Console.WriteLine(log + " : "  + myFiber.IsCurrentThread);
+    // - "Action Styple : true"
+    // - "Direct call : false"
+
+    await Task.Delay(1000);
+    //after calling above await keyword, the execution context can be somewhere else
+    Console.WriteLine(myFiber.IsCurrentThread);
+    //returns always false
+}
 ```
 \
-**Be aware!**
+**Async Await Support!**
 
 Because the **await** keyword captures current context and use it later execution,\
 A short living thread pool thread can be messed up by this keyword.
 
 ```cs
-//let's say you're enqueuing async task
-void SomeFunction()
+async Task SomeFunction()
 {
-    myFiber.Enqueue(() => SomeAsyncFunction());
+    await myFiber.Enqueue(() => SomeAsyncFunction("Action Style"));
+    await SomeAsyncFunction("Direct call"));
 }
 
-async Task SomeAsyncFunction()
+async Task SomeAsyncFunction(string log)
 {
-    //In here, we assure that the function is calling in TaskFiber ThreadPool Thread.
-    //You can check this anytime you want
-    Console.WriteLine(myFiber.IsCurrentThread);
-    //returns true
+    //You can check where is your context anytime
+    Console.WriteLine(log + " : "  + myFiber.IsCurrentThread);
+    // - "Action Styple : true"
+    // - "Direct call : false"
 
     await Task.Delay(1000);
-    //but after calling above await keyword, the execution context can be somewhere else
+    //after calling above await keyword, the execution context can be somewhere else
     Console.WriteLine(myFiber.IsCurrentThread);
-    //returns false
+    //returns always false
 }
 ```
 
@@ -85,118 +100,9 @@ async Task SomeAsyncFunction()
     //returns true
 }
 ```
+
+There is also MessageFiber<T\> class for better performance. Take a look.
 \
-Common mistakes
-
-```cs
-//if you're enqueuing async task directly
-void SomeFunction()
-{
-    await myFiber.Enqueue(SomeAsyncFunction());
-}
-
-async Task SomeAsyncFunction()
-{
-    //because the execution of SomeAsyncFuction continues from caller context,
-    Console.WriteLine(myFiber.IsCurrentThread);
-    //returns false
-}
-```
-
-But actually you don't have to even enqueue in this case.
-```cs
-void SomeFunction()
-{
-    //assigning is just to prevent warning
-    var asyncTask = SomeAsyncFunction();
-}
-
-async Task SomeAsyncFunction()
-{
-    await myFiber.IntoFiber();
-    //this will promise you're in the TaskFiber as always..
-    //...so calling
-    Console.WriteLine(myFiber.IsCurrentThread);
-    //returns true
-}
-```
-If you wanna await queued async function, things get a bit tricky.
-```cs
-async Task SomeFunction()
-{
-    var task = myFiber.Enqueue(() => SomeAsyncFunction());
-    //the task variable is acutally Task<Task>.
-    //Enqueued Task is just starting of async function, and nested Task is acutal async Task. 
-
-    await task; //this waits the execution starting of async function in TaskFiber
-    await task.Result; //this waits actual async task of SomeAsyncFunction returns
-
-    //same as generic case.
-    var genericTask = myFiber.Enqueue(() => SomeAsyncFunctionGeneric());
-    //genericTask is Task<Task<int>>
-    await genericTask; //this waits the execution starting of async function in TaskFiber
-    var myInt = await genericTask.Result; //this waits actual async task of SomeAsyncFunction returns
-}
-
-async Task SomeAsyncFunction()
-{
-    ...
-}
-
-
-async Task<int> SomeAsyncFunctionGeneric()
-{
-    ...
-}
-```
-So here is simple alternative.
-```cs
-async Task SomeFunction()
-{
-    await SomeAsyncFunction();
-
-    var myInt = await SomeAsyncFunctionGeneric();
-}
-
-async Task SomeAsyncFunction()
-{
-    await myFiber.IntoFiber();
-    ...
-}
-
-
-async Task<int> SomeAsyncFunctionGeneric()
-{
-    await myFiber.IntoFiber();
-    ...
-}
-```
-
-
-
-
-
-
-**DO NOT** Enqueue already started Task
-```cs
-void SomeFunction()
-{
-    var asyncTask = SomeAsyncFunction();
-    myFiber.Enqueue(asyncTask);//will raise exception
-    //this asyncTask is already running Task.
-    //So the execution of the task can't be scheduled!!
-    
-    //consider using IntoFiber in the async function,
-    //or enqueue as an async action
-    myFiber.Enqueue(() => SomeAsyncFunction());
-}
-
-async Task SomeAsyncFunction()
-{
-    ...
-}
-```
-
 <br />
 
 
@@ -209,8 +115,12 @@ But still, I wanted to use somewhat **Actor Based Concurrency** as before, I mad
 
 ## Installation
 
-Download source files and include them into your project.
-I'll post this project to Nuget asap.
+Download source files and include them into your project.\
+Or use nuget package console.
+
+```
+PM > Install-Package Locus.Threading
+```Works too.
 
 
 ## License
