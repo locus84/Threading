@@ -30,7 +30,7 @@ namespace Locus.Threading
             return true;
         }
         
-        public void EnqueueMessage(T message)
+        public void Enqueue(T message)
         {
             var newNode = SingleNodePool<T>.Pop();
             newNode.Item = message;

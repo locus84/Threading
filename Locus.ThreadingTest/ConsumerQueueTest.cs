@@ -13,7 +13,7 @@ namespace Locus.ThreadingTest
         public async Task TestSingleConsumerMethod()
         {
             var tmf = new SingleConsumerQueue<int>();
-            var add = MultiThreadTest.RunMultiple(() => tmf.EnqueueMessage(1), 100000);
+            var add = MultiThreadTest.RunMultiple(() => tmf.Enqueue(1), 100000);
             var sum = 0;
             var result = 0;
             //do while adding
