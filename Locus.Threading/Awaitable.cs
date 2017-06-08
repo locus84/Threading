@@ -6,8 +6,10 @@ namespace Locus.Threading
 {
     public static class AwaiterExtensions
     {
-        public static IAwaiter IntoFiber(this Task task, IFiber fiber)
+        public static IAwaiter IntoFiber(this Task task, IFiber fiber = null)
         {
+            fiber = fiber ?? ThreadSpecific.Current;
+            if(fiber == null) throw new Exception("Thread is not in any fiber");
             return new FiberAwaiter(task, fiber);
         }
 
@@ -16,8 +18,10 @@ namespace Locus.Threading
             return new EnsureInFiber(fiber);
         }
 
-        public static IAwaiter<TResult> IntoFiber<TResult>(this Task<TResult> task, IFiber fiber)
+        public static IAwaiter<TResult> IntoFiber<TResult>(this Task<TResult> task, IFiber fiber = null)
         {
+            fiber = fiber ?? ThreadSpecific.Current;
+            if (fiber == null) throw new Exception("Thread is not in any fiber");
             return new FiberAwaiter<TResult>(task, fiber);
         }
     }
@@ -144,11 +148,5 @@ namespace Locus.Threading
         TResult GetResult();
 
         IAwaiter<TResult> GetAwaiter();
-    }
-
-    public interface IFiber
-    {
-        bool IsCurrentThread { get; }
-        void EnqueueAwaitableContinuation(Action action);
     }
 }

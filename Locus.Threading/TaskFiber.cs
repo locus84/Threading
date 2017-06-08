@@ -8,10 +8,7 @@ namespace Locus.Threading
     public class TaskFiber : IFiber
     {
         Task tail = Task.CompletedTask;
-
-        [ThreadStatic]
-        static TaskFiber m_CurrentFiber;
-        public bool IsCurrentThread { get { return m_CurrentFiber == this; } }
+        public bool IsCurrentThread { get { return ThreadSpecific.Current == this; } }
 
         Task EnqueueInternal(Task newTail)
         {
@@ -21,16 +18,16 @@ namespace Locus.Threading
 
         void DoNextTask(Task next)
         {
-            m_CurrentFiber = this;
+            ThreadSpecific.Current = this;
             next.RunSynchronously();
-            m_CurrentFiber = null;
+            ThreadSpecific.Current = null;
         }
 
         T DoNextTaskTyped<T>(Task<T> next)
         {
-            m_CurrentFiber = this;
+            ThreadSpecific.Current = this;
             next.RunSynchronously();
-            m_CurrentFiber = null;
+            ThreadSpecific.Current = null;
             return next.Result;
         }
 

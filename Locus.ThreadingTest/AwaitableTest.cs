@@ -42,11 +42,11 @@ namespace Locus.ThreadingTest
             Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
-            await Task.Delay(10).IntoFiber(TestTaskFiber);
+            await Task.Delay(10).IntoFiber();
             Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
-            await Task.Delay(10).IntoFiber(TestTaskFiber);
+            await Task.Delay(10).IntoFiber();
             Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
