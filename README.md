@@ -90,6 +90,12 @@ async Task SomeAsyncFunction()
 
     Console.WriteLine(myFiber.IsCurrentThread);
     //returns true
+
+    //you can even omit fiber parameter if you sure you're in a thread fiber(will introduce in 1.0.2)
+    //and wanna back to that fiber after await.
+    await Task.Delay(1000).IntoFiber();
+    Console.WriteLine(myFiber.IsCurrentThread);
+    //returns true
 }
 ```
 
