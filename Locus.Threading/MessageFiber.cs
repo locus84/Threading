@@ -12,8 +12,10 @@ namespace Locus.Threading
         //so when start executing new message, we have to return this node to pool
         MessageNodeBase tail;
         MessageNodeBase lastTale;
-        Thread m_CurrentThread;
-        public bool IsCurrentThread { get { return m_CurrentThread == Thread.CurrentThread; } }
+
+        [ThreadStatic]
+        static MessageFiber<T> m_CurrentFiber;
+        public bool IsCurrentThread { get { return m_CurrentFiber == this; } }
 
         static readonly MessageNode<T> Blocked = new MessageNode<T>();
 
@@ -32,9 +34,10 @@ namespace Locus.Threading
         void RunInternal(object obj)
         {
             var messageNode = (MessageNodeBase)obj;
-            
-            //store current Thread to reduce property call
-            var currentThread = Thread.CurrentThread;
+
+            //because it's thread specific value, we dont need to set
+            //null everytime.
+            m_CurrentFiber = this;
 
             do
             {
@@ -42,9 +45,6 @@ namespace Locus.Threading
                 lastTale.PushToPool();
                 //remember last tale to be continued
                 lastTale = messageNode;
-
-                //set current Thread
-                m_CurrentThread = currentThread;
 
                 try
                 {
@@ -60,14 +60,14 @@ namespace Locus.Threading
                     OnException(e);
                 }
 
-                //release current Thread
-                m_CurrentThread = null;
-
                 //if next is null, then it successfully replace it's Next to Blocked
                 //otherwise messagenode is what recently trytail'ed
                 messageNode = GetNext(messageNode);
             }
             while (messageNode != null);
+
+            //now we're done is this thread pool thread,
+            m_CurrentFiber = null;
         }
 
         /// <summary>
