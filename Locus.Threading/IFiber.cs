@@ -13,6 +13,6 @@ namespace Locus.Threading
     internal static class ThreadSpecific
     {
         [ThreadStatic]
-        internal static IFiber Current;
+        internal static IFiber CurrentIFiber;
     }
 }

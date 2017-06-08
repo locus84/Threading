@@ -8,7 +8,7 @@ namespace Locus.Threading
     {
         public static IAwaiter IntoFiber(this Task task, IFiber fiber = null)
         {
-            fiber = fiber ?? ThreadSpecific.Current;
+            fiber = fiber ?? ThreadSpecific.CurrentIFiber;
             if(fiber == null) throw new Exception("Thread is not in any fiber");
             return new FiberAwaiter(task, fiber);
         }
@@ -20,7 +20,7 @@ namespace Locus.Threading
 
         public static IAwaiter<TResult> IntoFiber<TResult>(this Task<TResult> task, IFiber fiber = null)
         {
-            fiber = fiber ?? ThreadSpecific.Current;
+            fiber = fiber ?? ThreadSpecific.CurrentIFiber;
             if (fiber == null) throw new Exception("Thread is not in any fiber");
             return new FiberAwaiter<TResult>(task, fiber);
         }

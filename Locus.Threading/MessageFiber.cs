@@ -13,7 +13,7 @@ namespace Locus.Threading
         MessageNodeBase tail;
         MessageNodeBase lastTale;
 
-        public bool IsCurrentThread { get { return ThreadSpecific.Current == this; } }
+        public bool IsCurrentThread { get { return ThreadSpecific.CurrentIFiber == this; } }
 
         static readonly MessageNode<T> Blocked = new MessageNode<T>();
 
@@ -35,7 +35,7 @@ namespace Locus.Threading
 
             //because it's thread specific value, we dont need to set
             //null everytime.
-            ThreadSpecific.Current = this;
+            ThreadSpecific.CurrentIFiber = this;
 
             do
             {
@@ -65,7 +65,7 @@ namespace Locus.Threading
             while (messageNode != null);
 
             //now we're done is this thread pool thread,
-            ThreadSpecific.Current = null;
+            ThreadSpecific.CurrentIFiber = null;
         }
 
         /// <summary>
