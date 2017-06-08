@@ -5,7 +5,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <IncludeSymbols>True</IncludeSymbols>
     <IncludeSource>True</IncludeSource>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Authors>Locus</Authors>
     <Company>Third Door</Company>
     <Description>Actor based concurrency library that supports TPL and async-await for .Net Core</Description>
