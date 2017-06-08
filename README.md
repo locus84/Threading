@@ -54,16 +54,20 @@ A short living thread pool thread can be messed up by this keyword.
 ```cs
 async Task SomeFunction()
 {
-    await myFiber.Enqueue(() => SomeAsyncFunction("Action Style"));
+    //this will await full async execution
     await SomeAsyncFunction("Direct call"));
+
+    //this will await just enqueueing and 1st iteration of SomeAsyncFunction.
+    //(right before another await inside function)
+    await myFiber.Enqueue(() => SomeAsyncFunction("Action Style"));
 }
 
 async Task SomeAsyncFunction(string log)
 {
     //You can check where is your context anytime
     Console.WriteLine(log + " : "  + myFiber.IsCurrentThread);
-    // - "Action Styple : true"
     // - "Direct call : false"
+    // - "Action Styple : true"
 
     await Task.Delay(1000);
     //after calling above await keyword, the execution context can be somewhere else
