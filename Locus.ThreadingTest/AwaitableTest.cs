@@ -29,7 +29,8 @@ namespace Locus.ThreadingTest
         {
             int result = 0;
             Assert.False(TestTaskFiber.IsCurrentThread);
-            await TestMeesageFiber.IntoFiber();
+            await TestMeesageFiber;
+            //or await TestMeesageFiber.IntoFiber();
 
             await TestTaskFiber.IntoFiber();
             Assert.True(TestTaskFiber.IsCurrentThread);

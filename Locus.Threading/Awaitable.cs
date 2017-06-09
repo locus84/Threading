@@ -18,6 +18,11 @@ namespace Locus.Threading
             return new EnsureInFiber(fiber);
         }
 
+        public static IAwaiter GetAwaiter(this IFiber fiber)
+        {
+            return new EnsureInFiber(fiber);
+        }
+
         public static IAwaiter<TResult> IntoFiber<TResult>(this Task<TResult> task, IFiber fiber = null)
         {
             fiber = fiber ?? ThreadSpecific.CurrentIFiber;
