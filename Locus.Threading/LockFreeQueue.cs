@@ -4,6 +4,48 @@
 //http://www.boyet.com/articles/lockfreequeue.html
 //idea came from here
 
+
+//public class LockFreeLinkPool<T>
+//{
+
+//    private SingleNode<T> head;
+
+//    public LockFreeLinkPool()
+//    {
+//        head = new SingleNode<T>();
+//    }
+
+//    public void Push(SingleNode<T> newNode)
+//    {
+//        newNode.Item = default(T);
+//        do
+//        {
+//            newNode.Next = head;
+//        } while (!Atomic.SwapIfSame(ref head, newNode, newNode.Next));
+//        return;
+//    }
+
+//    public SingleNode<T> Pop()
+//    {
+//        SingleNode<T> node;
+//        do
+//        {
+//            node = head;
+
+//            //ok i pick this as my result
+//            //but meanwhile, other thread can get this head and 
+//            //circle twice and have different Next value
+//            //which messing up everything
+//            if (node.Next == null)
+//            {
+//                return new SingleNode<T>();
+//            }
+//        } while (!Atomic.SwapIfSame(ref head, node.Next, node));
+
+//        return node;
+//    }
+//}
+
 using System.Threading;
 using System.Collections.Generic;
 
