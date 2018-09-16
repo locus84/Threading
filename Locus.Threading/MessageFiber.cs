@@ -17,9 +17,12 @@ namespace Locus.Threading
 
         static readonly MessageNode<T> Blocked = new MessageNode<T>();
 
+        CustomSyncContext m_SyncContext;
+
         public MessageFiber()
         {
             RunInternalWaitCallback = RunInternal;
+            m_SyncContext = new CustomSyncContext(this);
             tail = lastTale = new MessageNode<T>() { Next = Blocked };
         }
 
@@ -36,6 +39,9 @@ namespace Locus.Threading
             //because it's thread specific value, we dont need to set
             //null everytime.
             ThreadSpecific.CurrentIFiber = this;
+
+            var prevContext = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(m_SyncContext);
 
             do
             {
@@ -64,6 +70,7 @@ namespace Locus.Threading
             }
             while (messageNode != null);
 
+            SynchronizationContext.SetSynchronizationContext(prevContext);
             //now we're done is this thread pool thread,
             ThreadSpecific.CurrentIFiber = null;
         }

@@ -8,6 +8,13 @@ namespace Locus.Threading
     public class TaskFiber : IFiber
     {
         Task tail = Task.CompletedTask;
+        CustomSyncContext m_SyncContext;
+
+        public TaskFiber()
+        {
+            m_SyncContext = new CustomSyncContext(this);
+        }
+
         public bool IsCurrentThread { get { return ThreadSpecific.CurrentIFiber == this; } }
 
         Task EnqueueInternal(Task newTail)
@@ -19,7 +26,10 @@ namespace Locus.Threading
         void DoNextTask(Task next)
         {
             ThreadSpecific.CurrentIFiber = this;
+            var prevContext = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(m_SyncContext);
             next.RunSynchronously();
+            SynchronizationContext.SetSynchronizationContext(prevContext);
             ThreadSpecific.CurrentIFiber = null;
         }
 
@@ -86,4 +96,20 @@ namespace Locus.Threading
             Enqueue(action);
         }
     }
+
+    public class CustomSyncContext : SynchronizationContext
+    {
+        IFiber m_Fiber;
+        public CustomSyncContext(IFiber fiber)
+        {
+            m_Fiber = fiber;
+        }
+
+        public override void Post(SendOrPostCallback d, object state)
+        {
+            m_Fiber.EnqueueAwaitableContinuation(() => d.Invoke(state));
+        }
+    }
 }
+
+

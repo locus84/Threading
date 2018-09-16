@@ -2,11 +2,19 @@
 using System;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Locus.ThreadingTest
 {
     public class AwaitableTest
     {
+        private readonly ITestOutputHelper output;
+
+        public AwaitableTest(ITestOutputHelper output)
+        {
+            this.output = output;
+        }
+
         static TaskFiber TestTaskFiber = new TaskFiber();
         static TestMsgFiber TestMeesageFiber = new TestMsgFiber();
 
@@ -21,6 +29,7 @@ namespace Locus.ThreadingTest
         public async Task ThreadContinuousTest()
         {
             //so when yield in fiber called, 
+            output.WriteLine("StartingMethod");
             var result = await SomeMethod();
             Assert.True(result == 5);
         }
@@ -34,6 +43,10 @@ namespace Locus.ThreadingTest
 
             await TestTaskFiber.IntoFiber();
             Assert.True(TestTaskFiber.IsCurrentThread);
+
+            await Task.Delay(10);
+
+            output.WriteLine("CurrentThread? : " + TestTaskFiber.IsCurrentThread);
 
             await Task.Delay(10).IntoFiber(TestTaskFiber);
             Assert.True(TestTaskFiber.IsCurrentThread);
