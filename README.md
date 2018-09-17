@@ -48,8 +48,14 @@ async Task SomeAsyncFunction()
 \
 **Async Await Support!**
 
-Because the **await** keyword captures current context and use it later execution,\
-A short living thread pool thread can be messed up by this keyword.
+An **await** keyword captures current context and use it later execution.\
+So after calling **await** keyword, your code will be handled by unknown threadpool thread. 
+
+But each **TaskFiber** have it's own custom logical Synchronization Context. \
+**TaskFiber**'s SynchronizationContext will remember current Fiber as a returning Thread. \
+After called **await** we'll safly be back to our calling Fiber.
+
+
 
 ```cs
 async Task SomeFunction()
@@ -68,40 +74,25 @@ async Task SomeAsyncFunction(string log)
     Console.WriteLine(log + " : "  + myFiber.IsCurrentThread);
     // - "Direct call : false"
     // - "Action Styple : true"
-
-    await Task.Delay(1000);
-    //after calling above await keyword, the execution context can be somewhere else
-    Console.WriteLine(myFiber.IsCurrentThread);
-    //returns always false
-}
-```
-
-But here comes the rescue. **TaskFiber.IntoFiber()**
-
-```cs
-async Task SomeAsyncFunction()
-{
-    ...
-    await Task.Delay(1000);
-    //simply await TaskFiber.IntoFiber() here.
+    
+    //if you call this function directly, call one of following to get into TaskFiber execution
+    await myFiber;
+    await Task.Yield().IntoFiber(myFiber);
     await myFiber.IntoFiber();
 
-    Console.WriteLine(myFiber.IsCurrentThread);
-    //returns true
+    //Now you're in myFiber's execution chain.
+    Console.WriteLine(log + " : "  + myFiber.IsCurrentThread);
+    // - "Direct call : true"
+    // - "Action Styple : true"
 
-    //if you're awaiting a task, then it can be simpler
-    await Task.Delay(1000).IntoFiber(myFiber);
-
+    await Task.Delay(1000);
+    //when calling above await keyword, the execution context will be stored
     Console.WriteLine(myFiber.IsCurrentThread);
-    //returns true
-
-    //you can even omit fiber parameter if you sure you're in a thread fiber(will introduce in 1.0.2)
-    //and wanna back to that fiber after await.
-    await Task.Delay(1000).IntoFiber();
-    Console.WriteLine(myFiber.IsCurrentThread);
-    //returns true
+    // - "Direct call : true"
+    // - "Action Styple : true"
 }
 ```
+
 
 There is also MessageFiber<T\> class for better performance. Take a look.
 \

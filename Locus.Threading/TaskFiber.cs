@@ -8,11 +8,11 @@ namespace Locus.Threading
     public class TaskFiber : IFiber
     {
         Task tail = Task.CompletedTask;
-        CustomSyncContext m_SyncContext;
+        FiberSyncContext m_SyncContext;
 
         public TaskFiber()
         {
-            m_SyncContext = new CustomSyncContext(this);
+            m_SyncContext = new FiberSyncContext(this);
         }
 
         public bool IsCurrentThread { get { return ThreadSpecific.CurrentIFiber == this; } }
@@ -97,10 +97,10 @@ namespace Locus.Threading
         }
     }
 
-    public class CustomSyncContext : SynchronizationContext
+    public class FiberSyncContext : SynchronizationContext
     {
         IFiber m_Fiber;
-        public CustomSyncContext(IFiber fiber)
+        public FiberSyncContext(IFiber fiber)
         {
             m_Fiber = fiber;
         }

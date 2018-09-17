@@ -17,12 +17,16 @@ namespace Locus.Threading
 
         static readonly MessageNode<T> Blocked = new MessageNode<T>();
 
-        CustomSyncContext m_SyncContext;
+        FiberSyncContext m_SyncContext;
 
+        /// <summary>
+        /// Create new Instance of MessageFiber<typeparamref name="T"/>
+        /// MessageFiber can run Task, Action, or overriden OnMessage<typeparamref name="T"/> function
+        /// </summary>
         public MessageFiber()
         {
             RunInternalWaitCallback = RunInternal;
-            m_SyncContext = new CustomSyncContext(this);
+            m_SyncContext = new FiberSyncContext(this);
             tail = lastTale = new MessageNode<T>() { Next = Blocked };
         }
 

@@ -18,7 +18,6 @@ namespace Locus.ThreadingTest
         static TaskFiber TestTaskFiber = new TaskFiber();
         static TestMsgFiber TestMeesageFiber = new TestMsgFiber();
 
-
         [Fact]
         public async Task TestAsyncStartMethod()
         {
@@ -38,33 +37,31 @@ namespace Locus.ThreadingTest
         {
             int result = 0;
             Assert.False(TestTaskFiber.IsCurrentThread);
-            await TestMeesageFiber;
-            //or await TestMeesageFiber.IntoFiber();
 
+            //Any of these
+            await TestTaskFiber;
             await TestTaskFiber.IntoFiber();
+            await Task.CompletedTask.IntoFiber(TestTaskFiber);
+
             Assert.True(TestTaskFiber.IsCurrentThread);
 
             await Task.Delay(10);
-
-            output.WriteLine("CurrentThread? : " + TestTaskFiber.IsCurrentThread);
-
-            await Task.Delay(10).IntoFiber(TestTaskFiber);
             Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
-            await Task.Delay(10).IntoFiber(TestTaskFiber);
+            await Task.Delay(10);
             Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
-            await Task.Delay(10).IntoFiber();
+            await Task.Delay(10);
             Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
-            await Task.Delay(10).IntoFiber();
+            await Task.Delay(10);
             Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
 
-            await Task.Delay(10).IntoFiber(TestTaskFiber);
+            await Task.Delay(10);
             Assert.True(TestTaskFiber.IsCurrentThread);
             result++;
             return result;
@@ -78,7 +75,6 @@ namespace Locus.ThreadingTest
 
         public async Task FiberYieldTest()
         {
-            Console.WriteLine("hgaha");
             Assert.False(TestTaskFiber.IsCurrentThread);
             await Task.Delay(5);
             Assert.True(TestTaskFiber.IsCurrentThread);
