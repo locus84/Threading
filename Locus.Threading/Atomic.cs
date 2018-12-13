@@ -1,7 +1,11 @@
 ﻿using System.Threading;
 
+/// <summary>
+/// Atomic functions for internal usage
+/// </summary>
 internal static class Atomic
 {
+
     public static bool SwapIfSame<T>(ref T original, T toSwap, T toCompare) where T : class
     {
         return ReferenceEquals(Interlocked.CompareExchange(ref original, toSwap, toCompare), toCompare);

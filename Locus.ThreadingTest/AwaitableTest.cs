@@ -15,13 +15,13 @@ namespace Locus.ThreadingTest
             this.output = output;
         }
 
-        static TaskFiber TestTaskFiber = new TaskFiber();
+        static MessageFiber TestTaskFiber = new MessageFiber();
         static TestMsgFiber TestMeesageFiber = new TestMsgFiber();
 
         [Fact]
         public async Task TestAsyncStartMethod()
         {
-            await FiberYieldTest().IntoFiber(TestTaskFiber);
+            await FiberYieldTest();
         }
 
         [Fact]
@@ -29,20 +29,14 @@ namespace Locus.ThreadingTest
         {
             //so when yield in fiber called, 
             output.WriteLine("StartingMethod");
-            var result = await SomeMethod();
+            var result = await SomeMethod(TestTaskFiber);
             Assert.True(result == 5);
         }
 
-        public async Task<int> SomeMethod()
+        public async Task<int> SomeMethod(MessageFiberBase messageFiberBase)
         {
+            await messageFiberBase;
             int result = 0;
-            Assert.False(TestTaskFiber.IsCurrentThread);
-
-            //Any of these
-            await TestTaskFiber;
-            await TestTaskFiber.IntoFiber();
-            await Task.CompletedTask.IntoFiber(TestTaskFiber);
-
             Assert.True(TestTaskFiber.IsCurrentThread);
 
             await Task.Delay(10);
@@ -76,7 +70,7 @@ namespace Locus.ThreadingTest
         public async Task FiberYieldTest()
         {
             Assert.False(TestTaskFiber.IsCurrentThread);
-            await Task.Delay(5);
+            await Task.Delay(5).ContinueIn(TestTaskFiber);
             Assert.True(TestTaskFiber.IsCurrentThread);
             await Task.Delay(5);
             Assert.True(TestTaskFiber.IsCurrentThread);
@@ -115,27 +109,15 @@ namespace Locus.ThreadingTest
         [Fact]
         public void EnqueueTypeTest()
         {
-            var myFiber = new TaskFiber();
+            var myFiber = new MessageFiber();
 
             //an action
-            myFiber.Enqueue(() => { });
-            //a func
-            myFiber.Enqueue(() => 0);
+            myFiber.EnqueueAction(() => { });
             //a task
-            myFiber.Enqueue(new Task(() => { }));
+            myFiber.EnqueueTask(new Task(() => { }));
             //a task<T>
-            myFiber.Enqueue(new Task<int>(() => 0));
-            //an async action
-            myFiber.Enqueue(async () => { await Task.Delay(0); });
-            //an async func
-            myFiber.Enqueue(async () => { await Task.Delay(0); return 0; });
-            //an async task
-            myFiber.Enqueue(() => EnqueueTestFunction());
-            //an async task<T>
-            myFiber.Enqueue(() => EnqueueTestFunctionResult());
+            myFiber.EnqueueTask(new Task<int>(() => 0));
         }
-
-
 
         async Task EnqueueTestFunction()
         {
