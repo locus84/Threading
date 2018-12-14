@@ -26,9 +26,9 @@ namespace Locus.Threading
         FiberSyncContext m_SyncContext;
         WaitCallback RunInternalWaitCallback;
 
+
         /// <summary>
-        /// Create new Instance of MessageFiber<typeparamref name="T"/>
-        /// MessageFiber can run Task, Action, or overriden OnMessage<typeparamref name="T"/> function
+        /// Create a message fiber instance
         /// </summary>
         public MessageFiberBase()
         {
@@ -61,7 +61,7 @@ namespace Locus.Threading
                 }
                 catch (Exception e)
                 {
-                    throw e;
+                    HandleException(e);
                 }
 
                 //if next is null, then it successfully replace it's Next to Blocked
@@ -76,6 +76,11 @@ namespace Locus.Threading
         }
 
         internal abstract void InvokeMessage(MessageNodeBase message);
+
+        protected virtual void HandleException(Exception e)
+        {
+            Console.WriteLine(e);
+        }
 
         internal static void EnqueueInternal(MessageFiberBase fiber, Action continuation)
         {

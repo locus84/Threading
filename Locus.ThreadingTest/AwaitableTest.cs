@@ -38,6 +38,14 @@ namespace Locus.ThreadingTest
             await messageFiberBase;
             int result = 0;
             Assert.True(TestTaskFiber.IsCurrentThread);
+            //enqueueing into same fiber, and wait it.
+            messageFiberBase.EnqueueAction(() => throw new Exception("hehe"));
+
+            await Task.Delay(1);
+
+            Assert.True(result == 0);
+
+            return 5;
 
             await Task.Delay(10);
             Assert.True(TestTaskFiber.IsCurrentThread);
